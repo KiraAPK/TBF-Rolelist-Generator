@@ -740,7 +740,7 @@ function checkBalance(list) {
         if (r.alignment === "Demonic") killpower += 1; // Only Demonic counts
     });
     neutralKilling.forEach(r => killpower += 1); // Each NK counts
-    tk.forEach(r => killpower += 1); // Town Killing counts
+    tk.forEach(r => killpower += 0.5); // Town Killing counts
     // total killpower now reflects your definition
 
     // --- Major Warnings ---
