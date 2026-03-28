@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Rolelist Generator</title>
+<style>
+    /* --- CSS Variables (Color Palette) --- */
+    :root {
+        --bg-color: #11151c;
+        --card-bg: #232936;
+        --border-color: #323b4b;
+        --title-color: #7e9bf1;
+        --text-color: #a0aabf;
+        --nav-bg: #2a3241;
+        --darkbar-bg: #161a23;
+        --tab-active-bg: #7e9bf1;
+        --tab-active-text: #11151c;
+        --warning-color: #f59e0b;
+
+        /* Faction Colors */
+        --town-color: #46cf00;
+        --mafia-color: #ef4444; 
+        --legion-color: #7b2d26;
+        --any-color: #b0b0b0;
+
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* --- Base Layout --- */
+    body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+
+    header {
+        background-color: var(--nav-bg);
+        width: 100%;
+        padding: 20px 0;
+        text-align: center;
+        border-bottom: 2px solid var(--border-color);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+        color: var(--title-color);
+        margin: 0;
+        font-size: 28px;
+        letter-spacing: 1px;
+    }
+
+    .container {
+        width: 90%;
+        max-width: 800px;
+        margin: 30px auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .controls, .settings-panel {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .settings-panel {
+        display: none;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    label {
+        font-size: 14px;
+        color: var(--title-color);
+        font-weight: bold;
+    }
+
+    select {
+        background-color: var(--darkbar-bg);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+        padding: 10px 15px;
+        border-radius: 5px;
+        font-size: 16px;
+        outline: none;
+        cursor: pointer;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 19px;
+    }
+
+    button {
+        background-color: var(--title-color);
+        color: var(--tab-active-text);
+        border: none;
+        padding: 12px 25px;
+        border-radius: 5px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    button:hover {
+        filter: brightness(1.2);
+        transform: translateY(-2px);
+    }
+
+    button.secondary {
+        background-color: var(--border-color);
+        color: var(--text-color);
+    }
+
+    .status-area {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .gimmick-box {
+        background-color: rgba(126, 155, 241, 0.1);
+        border-left: 4px solid var(--title-color);
+        padding: 15px;
+        border-radius: 0 5px 5px 0;
+        font-size: 15px;
+        color: #d1d5db;
+        display: none;
+        line-height: 1.5;
+        text-align: center;
+    }
+
+    .warning-box {
+        background-color: rgba(245, 158, 11, 0.1);
+        border: 1px solid var(--warning-color);
+        color: var(--warning-color);
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 13px;
+        display: none;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .list-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .role-row {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        width: 100%;
+        max-width: 600px;
+        box-sizing: border-box;
+        transition: transform 0.2s, border-color 0.2s;
+        position: relative;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    .role-row.show {
+        opacity: 1;
+        transform: translateX(0);
+        transition: all 0.4s ease-out;
+    }
+
+    .role-row::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+    }
+
+    .role-row:hover {
+        transform: scale(1.02);
+        border-color: #4b5563;
+    }
+
+    .role-row.locked {
+        border: 1px solid var(--title-color);
+        background-color: #1e2533;
+    }
+
+    .slot-name {
+        width: 140px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #8892b0;
+        font-weight: bold;
+        flex-shrink: 0;
+    }
+
+    .role-name {
+        font-size: 18px;
+        font-weight: bold;
+        flex-grow: 1;
+        text-align: center;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .lock-icon {
+        font-size: 12px;
+        margin-right: 5px;
+        opacity: 0.7;
+    }
+
+    .role-alignment {
+        width: 140px;
+        font-size: 11px;
+        opacity: 0.7;
+        text-align: right;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        flex-shrink: 0;
+    }
+
+    .traitor-tag {
+        background-color: #ef4444;
+        color: #111;
+        font-size: 10px;
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-weight: 900;
+        margin-left: 8px;
+        vertical-align: middle;
+        display: inline-block;
+    }
+
+    /* --- Exclusion Section --- */
+    .exclusion-section {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 10px;
+        background-color: var(--card-bg);
+    }
+
+    .exclusion-header {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 12px;
+        font-weight: bold;
+        cursor: pointer;
+        color: var(--title-color);
+        user-select: none;
+    }
+
+    .exclusion-header:hover {
+        background-color: rgba(126, 155, 241, 0.1);
+    }
+
+    .exclusion-list {
+        display: none;
+        flex-direction: column;
+        padding: 8px 12px;
+        gap: 5px;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .exclusion-item {
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 3px;
+        background: var(--darkbar-bg);
+    }
+
+    .exclusion-item input {
+        cursor: pointer;
+    }
+
+    /* --- Faction Colors --- */
+    .f-town::before { background-color: var(--town-color); }
+    .f-town .role-name { color: var(--town-color); }
+    .f-mafia::before { background-color: var(--mafia-color); }
+    .f-mafia .role-name { color: var(--mafia-color); }
+    .f-legion::before { background-color: var(--legion-color); }
+    .f-legion .role-name { color: var(--legion-color); }
+    .f-any::before { background-color: var(--any-color); }
+
+    /* Specific Neutral Colors & Borders */
+    .n-amnesiac::before { background-color: #22d3ee; }
+    .n-amnesiac .role-name { color: #22d3ee; }
+    .n-admirer::before { background-color: #60a5fa; }
+    .n-admirer .role-name { color: #60a5fa; }
+    .n-guardian-angel::before { background-color: #ffffff; }
+    .n-guardian-angel .role-name { color: #ffffff; }
+    .n-witch::before { background-color: #8b5cf6; }
+    .n-witch .role-name { color: #8b5cf6; }
+    .n-alchemist::before { background-color: #d946ef; }
+    .n-alchemist .role-name { color: #d946ef; }
+    .n-changeling::before { background-color: #166534; }
+    .n-changeling .role-name { color: #166534; }
+    .n-auditor::before { background-color: #d6bfa3; }
+    .n-auditor .role-name { color: #d6bfa3; }
+    .n-starspawn::before { background-color: #c4b5fd; }
+    .n-starspawn .role-name { color: #c4b5fd; }
+    .n-kitsune::before { background-color: #fdba74; }
+    .n-kitsune .role-name { color: #fdba74; }
+    .n-serial-killer::before { background-color: #3b82f6; }
+    .n-serial-killer .role-name { color: #3b82f6; }
+    .n-arsonist::before { background-color: #f97316; }
+    .n-arsonist .role-name { color: #f97316; }
+    .n-werewolf::before { background-color: #92400e; }
+    .n-werewolf .role-name { color: #92400e; }
+    .n-wendigo::before { background-color: #64748b; }
+    .n-wendigo .role-name { color: #64748b; }
+    .n-jester::before { background-color: #f472b6; }
+    .n-jester .role-name { color: #f472b6; }
+    .n-executioner::before { background-color: #9ca3af; }
+    .n-executioner .role-name { color: #9ca3af; }
+    .n-pirate::before { background-color: #facc15; }
+    .n-pirate .role-name { color: #facc15; }
+    .n-plaguebearer::before { background-color: #84cc16; }
+    .n-plaguebearer .role-name { color: #84cc16; }
+    .n-jackal::before { background-color: #181818; }
+    .n-jackal .role-name { color: #181818; }
+    .n-cultist::before { background-color: #E41B61; }
+    .n-cultist .role-name { color: #E41B61; }
+    .n-vampire::before { background-color: #4d7c0f; }
+    .n-vampire .role-name { color: #4d7c0f; }
+    .n-transporter::before { background-color: #4ade80; }
+    .n-transporter .role-name { color: #4ade80; }
+    .n-insane::before { background-color: #0f766e; }
+    .n-insane .role-name { color: #0f766e; }
+
+    @media (max-width: 600px) {
+        .role-row {
+            flex-direction: column;
+            height: auto;
+            padding: 15px;
+            gap: 5px;
+        }
+        .slot-name, .role-alignment {
+            width: 100%;
+            text-align: center;
+        }
+    }
+
+    #toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--title-color);
+        color: var(--tab-active-text);
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: bold;
+        display: none;
+        z-index: 100;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+#toast-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 9999;
+}
+
+.warning-toast {
+    background-color: #ffeb3b;
+    color: #000;
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    font-weight: 500;
+    min-width: 300px;
+    max-width: 500px;
+    text-align: center;
+    border-left: 5px solid #f44336;
+    opacity: 1;
+    transition: all 0.3s ease;
+}
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(100%); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+</style>
+</head>
+<body>
+
+    <header>
+        <h1>Rolelist Generator</h1>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label for="gamemode">Gamemode</label>
+                <select id="gamemode" onchange="updateEvilFactionState()">
+                    <option value="classic">Classic</option>
+                    <option value="jackal">Jackal Mode</option>
+                    <option value="traitor">Town Traitor</option>
+                    <option value="allany">All Any</option>
+                    <option value="trueallany">True All Any</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="evil-faction">Primary Evil Faction</label>
+                <select id="evil-faction">
+                    <option value="random">Randomize</option>
+                    <option value="Mafia">Mafia</option>
+                    <option value="Legion">The Legion</option>
+                </select>
+            </div>
+
+            <div class="btn-group">
+                <button onclick="generateList()">Generate List</button>
+                <button id="copy-btn" class="secondary" onclick="copyToClipboard()" style="display:none;">Copy Text</button>
+                <button class="secondary" onclick="toggleSettings()">⚙️</button>
+            </div>
+        </div>
+
+<!-- Exclusion Settings Panel -->
+<div id="settings-panel" class="settings-panel">
+    <label>Exclude Roles from Random Pools</label>
+    <div class="exclusion-grid" id="exclusion-grid">
+        <!-- JS will populate collapsible sections -->
+    </div>
+    <button class="secondary" style="margin-top:15px; padding: 5px 15px; font-size: 12px;" onclick="toggleSettings()">Close Settings</button>
+</div>
+
+        <div class="status-area">
+            <div id="gimmick" class="gimmick-box"></div>
+            <div id="warning" class="warning-box">⚠️ SETUP IMBALANCE: Low Town investigative power.</div>
+        </div>
+
+        <div id="toast-container"></div>
+
+        <div class="list-container" id="list-container">
+            <!-- Roles will appear here -->
+        </div>
+    </div>
+
+    <div id="toast">Copied to clipboard!</div>
+
+    <script>
+        const allRoles = [
+            // Town Investigative
+            { name: "Investigator", faction: "Town", alignment: "Investigative", unique: false },
+            { name: "Sheriff", faction: "Town", alignment: "Investigative", unique: false },
+            { name: "Lookout", faction: "Town", alignment: "Investigative", unique: false },
+            { name: "Tracker", faction: "Town", alignment: "Investigative", unique: false },
+            { name: "Psychic", faction: "Town", alignment: "Investigative", unique: false },
+            { name: "Spy", faction: "Town", alignment: "Investigative", unique: true },
+            // Town Protective
+            { name: "Bodyguard", faction: "Town", alignment: "Protective", unique: false },
+            { name: "Doctor", faction: "Town", alignment: "Protective", unique: false },
+            { name: "Trapper", faction: "Town", alignment: "Protective", unique: false },
+            { name: "Crusader", faction: "Town", alignment: "Protective", unique: false },
+            // Town Killing
+            { name: "Vigilante", faction: "Town", alignment: "Killing", unique: false },
+            { name: "Veteran", faction: "Town", alignment: "Killing", unique: true },
+            { name: "Jailor", faction: "Town", alignment: "Killing", unique: true },
+            { name: "Trickster", faction: "Town", alignment: "Killing", unique: false },
+            // Town Support
+            { name: "Tavern Keeper", faction: "Town", alignment: "Support", unique: false },
+            { name: "Medium", faction: "Town", alignment: "Support", unique: false },
+            { name: "Retributionist", faction: "Town", alignment: "Support", unique: true },
+            { name: "Monarch", faction: "Town", alignment: "Support", unique: true },
+            { name: "Shepherd", faction: "Town", alignment: "Support", unique: false },
+            // Mafia
+            { name: "Disguiser", faction: "Mafia", alignment: "Deception", unique: false },
+            { name: "Forger", faction: "Mafia", alignment: "Deception", unique: false },
+            { name: "Janitor", faction: "Mafia", alignment: "Deception", unique: false },
+            { name: "Hypnotist", faction: "Mafia", alignment: "Deception", unique: false },
+            { name: "Ambusher", faction: "Mafia", alignment: "Killing", unique: true },
+            { name: "Kidnapper", faction: "Mafia", alignment: "Killing", unique: true },
+            { name: "Demolitionist", faction: "Mafia", alignment: "Killing", unique: true },
+            { name: "Godfather", faction: "Mafia", alignment: "Support", unique: true },
+            { name: "Agent", faction: "Mafia", alignment: "Support", unique: false },
+            { name: "Consigliere", faction: "Mafia", alignment: "Support", unique: false },
+            { name: "Moonshiner", faction: "Mafia", alignment: "Support", unique: true },
+            { name: "Blackmailer", faction: "Mafia", alignment: "Support", unique: true },
+            // Legion
+            { name: "Azazel", faction: "Legion", alignment: "Demonic", unique: true },
+            { name: "Lavaiathan", faction: "Legion", alignment: "Demonic", unique: true },
+            { name: "Dreameater", faction: "Legion", alignment: "Heretic", unique: true },
+            { name: "Berserker", faction: "Legion", alignment: "Heretic", unique: true },
+            { name: "Necromancer", faction: "Legion", alignment: "Disciple", unique: true },
+            { name: "Voodoo Master", faction: "Legion", alignment: "Disciple", unique: true },
+            // Neutrals
+            { name: "Amnesiac", faction: "Neutral", alignment: "Benign", unique: false },
+            { name: "Admirer", faction: "Neutral", alignment: "Benign", unique: false },
+            { name: "Guardian Angel", faction: "Neutral", alignment: "Benign", unique: true },
+            { name: "Witch", faction: "Neutral", alignment: "Evil", unique: false },
+            { name: "Alchemist", faction: "Neutral", alignment: "Evil", unique: true },
+            { name: "Changeling", faction: "Neutral", alignment: "Evil", unique: false },
+            { name: "Auditor", faction: "Neutral", alignment: "Evil", unique: false },
+            { name: "Starspawn", faction: "Neutral", alignment: "Evil", unique: true },
+            { name: "Kitsune", faction: "Neutral", alignment: "Evil", unique: true },
+            { name: "Serial Killer", faction: "Neutral", alignment: "Killing", unique: false },
+            { name: "Arsonist", faction: "Neutral", alignment: "Killing", unique: false },
+            { name: "Werewolf", faction: "Neutral", alignment: "Killing", unique: true },
+            { name: "Wendigo", faction: "Neutral", alignment: "Killing", unique: false },
+            { name: "Jester", faction: "Neutral", alignment: "Chaos", unique: false },
+            { name: "Executioner", faction: "Neutral", alignment: "Chaos", unique: false },
+            { name: "Pirate", faction: "Neutral", alignment: "Chaos", unique: true },
+            { name: "Plaguebearer", faction: "Neutral", alignment: "Chaos", unique: true },
+            { name: "Jackal", faction: "Neutral", alignment: "Chaos", unique: true, special: true },
+            { name: "Cultist", faction: "Neutral", alignment: "Chaos", unique: true, special: true },
+            { name: "Vampire", faction: "Neutral", alignment: "Chaos", unique: false, special: true },
+            { name: "Transporter", faction: "Neutral", alignment: "Chaos", unique: false, trueAllAnyOnly: true },
+            { name: "Insane", faction: "Neutral", alignment: "Chaos", unique: false, trueAllAnyOnly: true }
+        ];
+
+        const templates = {
+            classic: ["Jailor", "TI", "TI", "TP", "TP", "TK", "RT", "RT", "RT", "HeadEvil", "RE", "RE", "RE", "NE", "NK"],
+            jackal:  ["Jailor", "TI", "TI", "TP", "TP", "TK", "RT", "RT", "RT", "HeadEvil", "RE", "RE", "RE", "NE", "Jackal"],
+            traitor: ["Jailor", "TI", "TI", "TP", "TP", "TK", "RT", "RT", "RT", "RT", "HeadEvil", "RE", "RE", "RE", "NE"],
+            allany: Array(15).fill("Any"),
+            trueallany: Array(15).fill("TrueAny")
+        };
+
+        const gimmicks = {
+            classic: "<strong>Classic:</strong> A standard battle of wits. No special gimmicks.",
+            jackal: "<strong>Jackal Mode:</strong> One random Town Member and one random Mafia OR Neutral Evil role will be Recruited and aligned with the Jackal.",
+            traitor: "<strong>Town Traitor:</strong> ONE Random Town member will be a Traitor and will be aligned with the Mafia/Legion.",
+            allany: "<strong>All Any:</strong> Completely random. No guaranteed alignments.",
+            trueallany: "<strong>True All Any:</strong> Completely random. Includes extremely rare Gamemode Specific roles."
+        };
+
+        let currentList = [];
+        let lockedIndices = new Set();
+        let excludedRoles = new Set();
+
+        function toggleSettings() {
+            const panel = document.getElementById('settings-panel');
+            panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+function initExclusionList() {
+    const grid = document.getElementById('exclusion-grid');
+    grid.innerHTML = "";
+
+    const factions = ["Town", "Mafia", "Legion", "Neutral"];
+    factions.forEach(faction => {
+        const section = document.createElement('div');
+        section.className = "exclusion-section";
+
+        const header = document.createElement('div');
+        header.className = "exclusion-header";
+        header.textContent = faction;
+        const icon = document.createElement('span');
+        icon.textContent = "▼";
+        header.appendChild(icon);
+        section.appendChild(header);
+
+        const roleList = document.createElement('div');
+        roleList.className = "exclusion-list";
+
+        header.onclick = () => {
+            const isOpen = roleList.style.display === "flex";
+            roleList.style.display = isOpen ? "none" : "flex";
+            icon.textContent = isOpen ? "▼" : "▲";
+        };
+
+        allRoles.filter(r => r.faction === faction)
+            .sort((a,b) => a.name.localeCompare(b.name))
+            .forEach(role => {
+                const label = document.createElement('label');
+                label.className = "exclusion-item";
+                const checkbox = document.createElement('input');
+                checkbox.type = "checkbox";
+                checkbox.onchange = (e) => {
+                    if (e.target.checked) excludedRoles.add(role.name);
+                    else excludedRoles.delete(role.name);
+                };
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(role.name));
+                roleList.appendChild(label);
+            });
+
+        section.appendChild(roleList);
+        grid.appendChild(section);
+    });
+}
+
+        function updateEvilFactionState() {
+            const mode = document.getElementById('gamemode').value;
+            const factionSelect = document.getElementById('evil-faction');
+            factionSelect.disabled = (mode === 'allany' || mode === 'trueallany');
+            lockedIndices.clear();
+        }
+
+        function getValidCandidates(slotType, chosenRoles, evilFaction) {
+            return allRoles.filter(role => {
+                // Unique check
+                if (role.unique && chosenRoles.some(c => c.role.name === role.name)) return false;
+                
+                // Exclusion check (Only exclude if it wasn't a hard-coded slot requirement, but for 'Any' and 'Random' slots)
+                if (excludedRoles.has(role.name) && !slotType.includes(role.name) && slotType !== "Jailor") return false;
+
+                let mCount = chosenRoles.filter(c => c.role.faction === "Mafia").length;
+                let lCount = chosenRoles.filter(c => c.role.faction === "Legion").length;
+                let ldCount = chosenRoles.filter(c => c.role.alignment === "Demonic").length;
+
+                if (role.faction === "Mafia" && mCount >= 4) return false;
+                if (role.faction === "Legion" && lCount >= 4) return false;
+                if (role.alignment === "Demonic" && ldCount >= 1) return false;
+
+                if ((role.alignment === "Heretic" || role.alignment === "Disciple") && ldCount === 0) return false;
+
+                if (slotType !== "TrueAny") {
+                    if (role.trueAllAnyOnly) return false;
+                    if (role.special && slotType !== "Jackal" && slotType !== "Any") return false;
+                }
+
+                switch (slotType) {
+                    case "Jailor": return role.name === "Jailor";
+                    case "TI": return role.faction === "Town" && role.alignment === "Investigative";
+                    case "TP": return role.faction === "Town" && role.alignment === "Protective";
+                    case "TK": return role.faction === "Town" && role.alignment === "Killing";
+                    case "RT": return role.faction === "Town";
+                    case "HeadEvil": return (evilFaction === "Mafia") ? role.name === "Godfather" : role.alignment === "Demonic";
+                    case "RE": 
+                        if (evilFaction === "Mafia") return role.faction === "Mafia" && role.name !== "Godfather";
+                        return role.faction === "Legion" && role.alignment !== "Demonic";
+                    case "NE": return role.faction === "Neutral" && role.alignment === "Evil";
+                    case "NK": return role.faction === "Neutral" && role.alignment === "Killing";
+                    case "Jackal": return role.name === "Jackal";
+                    case "Any": return !role.special && !role.trueAllAnyOnly;
+                    case "TrueAny": return true;
+                    default: return false;
+                }
+            });
+        }
+
+        function generateList() {
+            const mode = document.getElementById('gamemode').value;
+            let evilInput = document.getElementById('evil-faction').value;
+            let chosenEvil = evilInput === "random" ? (Math.random() > 0.5 ? "Mafia" : "Legion") : evilInput;
+
+            const template = templates[mode];
+            let newList = [];
+            
+            for (let i = 0; i < template.length; i++) {
+                if (lockedIndices.has(i) && currentList[i]) {
+                    newList.push(currentList[i]);
+                } else {
+                    let candidates = getValidCandidates(template[i], newList, chosenEvil);
+                    // Fallback logic if exclusions make a slot impossible
+                    if (candidates.length === 0) {
+                        candidates = allRoles.filter(r => {
+                            if (r.unique && newList.some(c => c.role.name === r.name)) return false;
+                            return r.faction === "Town"; // Emergency fallback to RT
+                        });
+                    }
+                    
+                    newList.push({
+                        slot: template[i],
+                        role: candidates[Math.floor(Math.random() * candidates.length)],
+                        isTraitor: false
+                    });
+                }
+            }
+
+            if (mode === "traitor") {
+                newList.forEach(item => item.isTraitor = false);
+                let townIndices = newList.map((item, idx) => item.role.faction === "Town" ? idx : -1).filter(idx => idx !== -1);
+                let unlockedTown = townIndices.filter(idx => !lockedIndices.has(idx));
+                let targetIdx = unlockedTown.length > 0 ? unlockedTown[Math.floor(Math.random() * unlockedTown.length)] : townIndices[0];
+                if (targetIdx !== undefined) newList[targetIdx].isTraitor = true;
+            }
+
+            currentList = newList;
+            render(currentList, mode, chosenEvil);
+            checkBalance(newList);
+            document.getElementById('copy-btn').style.display = 'block';
+        }
+
+function checkBalance(list) {
+    const warning = document.getElementById('warning');
+    let warnings = [];
+
+    const town = list.filter(r => r.role.faction === "Town");
+    const ti = town.filter(r => r.role.alignment === "Investigative");
+    const tp = town.filter(r => r.role.alignment === "Protective");
+    const tk = town.filter(r => r.role.alignment === "Killing");
+
+    const mafia = list.filter(r => r.role.faction === "Mafia");
+    const legion = list.filter(r => r.role.faction === "Legion");
+    const evilFactionCount = mafia.length + legion.length;
+
+    const neutral = list.filter(r => r.role.faction === "Neutral");
+    const neutralBenignEvil = neutral.filter(r => r.role.alignment === "Benign" || r.role.alignment === "Evil");
+    const neutralChaos = neutral.filter(r => r.role.alignment === "Chaos");
+    const neutralKilling = neutral.filter(r => r.role.alignment === "Killing");
+
+    // --- Killpower calculation ---
+    let killpower = 0;
+    mafia.forEach(r => killpower += (r.alignment === "Killing" ? 1 : 1)); // Mafia all count 1, MK also counts as 1 (already included)
+    legion.forEach(r => {
+        if (r.alignment === "Demonic") killpower += 1; // Only Demonic counts
+    });
+    neutralKilling.forEach(r => killpower += 1); // Each NK counts
+    tk.forEach(r => killpower += 1); // Town Killing counts
+    // total killpower now reflects your definition
+
+    // --- Major Warnings ---
+    if (town.length > 10) warnings.push("⚠️ HIGH TOWN: Too many Town roles may imbalance the game.");
+    if (town.length < 6) warnings.push("⚠️ LOW TOWN: Not enough Town roles may make the game unstable.");
+    if (evilFactionCount < 3) warnings.push("⚠️ LOW FACTION EVIL: Too few Mafia/Legion roles reduces challenge.");
+    if (evilFactionCount > 6) warnings.push("⚠️ HIGH FACTION EVIL: Too many Mafia/Legion roles may overwhelm the Town.");
+    if (neutral.length < 2) warnings.push("⚠️ LOW NEUTRALS: Too few Neutral roles may reduce game variety.");
+
+    // --- Killpower Warnings ---
+    if (killpower < 1) warnings.push("⚠️ LOW KILLPOWER: The game may be too slow or Town may dominate.");
+    if (killpower > 5) warnings.push("⚠️ HIGH KILLPOWER: Too much killing potential may end the game quickly.");
+
+    // --- Minor Warnings (only if no related major warning) ---
+    if (!warnings.some(w => w.includes("LOW TOWN"))) {
+        if (tp.length < 1) warnings.push("⚠️ LOW TP: Too few Town Protective roles may leave Town vulnerable.");
+        if (ti.length < 1) warnings.push("⚠️ LOW TI: Not enough Town Investigative roles may slow Town progress.");
+    }
+    if (!warnings.some(w => w.includes("HIGH TOWN"))) {
+        if (ti.length > 4) warnings.push("⚠️ HIGH TI: Too many Town Investigative roles may result in a game being solved too quickly.");
+        if (tp.length > 4) warnings.push("⚠️ HIGH TP: Too many Town Protective roles may make the Town over-defensive.");
+        if (tk.length > 4) warnings.push("⚠️ HIGH TK: Too many Town Killing roles may increase deathrate rapidly.");
+    }
+
+    if (neutralBenignEvil.length > 4) warnings.push("⚠️ HIGH NEUTRAL BENIGN/EVIL: These roles in excess may slow the game.");
+    if (neutralChaos.length > 4) warnings.push("⚠️ HIGH NEUTRAL CHAOS: Lots of Chaos roles can make the game chaotic and unpredictable.");
+    if (neutralKilling.length > 2) warnings.push("⚠️ HIGH NEUTRAL KILLING: High death potential may end the game too quickly.");
+
+    // --- Display warnings ---
+    if (warnings.length > 0) {
+        warning.style.display = "block";
+        warning.innerHTML = warnings.join("<br>");
+    } else {
+        warning.style.display = "none";
+    }
+}
+
+        function toggleLock(index) {
+            if (lockedIndices.has(index)) {
+                lockedIndices.delete(index);
+            } else {
+                lockedIndices.add(index);
+            }
+            const rows = document.querySelectorAll('.role-row');
+            const row = rows[index];
+            row.classList.toggle('locked');
+            const roleName = row.querySelector('.role-name');
+            const r = currentList[index].role;
+            roleName.innerHTML = (lockedIndices.has(index) ? '<span class="lock-icon">🔒</span>' : '') + r.name + (currentList[index].isTraitor ? '<span class="traitor-tag">TRAITOR</span>' : '');
+        }
+
+        function render(list, mode, evil) {
+            const container = document.getElementById('list-container');
+            const gimmick = document.getElementById('gimmick');
+            container.innerHTML = "";
+            gimmick.innerHTML = gimmicks[mode];
+            gimmick.style.display = "block"; 
+
+            list.forEach((item, index) => {
+                const r = item.role;
+                let cssClass = `f-${r.faction.toLowerCase()}`;
+                if (r.faction === "Neutral") {
+                    cssClass = `n-${r.name.toLowerCase().replace(/\s+/g, '-')}`;
+                }
+
+                const row = document.createElement('div');
+                row.className = `role-row ${cssClass}`;
+                if (lockedIndices.has(index)) row.classList.add('locked');
+                
+                let slotLabel = item.slot;
+                if (slotLabel === "HeadEvil") slotLabel = (evil === "Mafia" ? "Godfather" : "Legion Demonic");
+                if (slotLabel === "RE") slotLabel = (evil === "Mafia" ? "Random Mafia" : "Random Legion");
+                
+                const map = { "TI":"Town Investigative", "TP":"Town Protective", "TK":"Town Killing", "RT":"Random Town", "NE":"Neutral Evil", "NK":"Neutral Killing", "Any":"Any", "TrueAny":"True Any" };
+                slotLabel = map[slotLabel] || slotLabel;
+
+                row.innerHTML = `
+                    <div class="slot-name">${slotLabel}</div>
+                    <div class="role-name" onclick="toggleLock(${index})">
+                        ${lockedIndices.has(index) ? '<span class="lock-icon">🔒</span>' : ''}${r.name}${item.isTraitor ? '<span class="traitor-tag">TRAITOR</span>' : ''}
+                    </div>
+                    <div class="role-alignment">${r.faction} ${r.alignment}</div>
+                `;
+                container.appendChild(row);
+
+                setTimeout(() => {
+                    row.classList.add('show');
+                }, index * 50);
+            });
+        }
+
+        function copyToClipboard() {
+            if (currentList.length === 0) return;
+            const mode = document.getElementById('gamemode').selectedOptions[0].text;
+            let text = `📜 **${mode} Rolelist**\n\n`;
+            currentList.forEach((item, i) => {
+                const f = item.role.faction;
+                let emoji = "🟡";
+                if (f === "Town") emoji = "🟢";
+                else if (f === "Mafia") emoji = "🔴";
+                else if (f === "Legion") emoji = "🟣";
+                text += `${i+1}. ${emoji} **${item.role.name}**${item.isTraitor ? ' [TRAITOR]' : ''}\n`;
+            });
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2000);
+        }
+
+        window.onload = () => {
+            initExclusionList();
+            generateList();
+        };
+    </script>
+</body>
+</html>
