@@ -751,8 +751,8 @@ function checkBalance(list) {
     if (neutral.length < 2) warnings.push("⚠️ LOW NEUTRALS: Too few Neutral roles may reduce game variety.");
 
     // --- Killpower Warnings ---
-    if (killpower < 1) warnings.push("⚠️ LOW KILLPOWER: The game may be too slow or Town may dominate.");
-    if (killpower > 5) warnings.push("⚠️ HIGH KILLPOWER: Too much killing potential may end the game quickly.");
+    if (killpower < 2) warnings.push("⚠️ LOW KILLPOWER: The game may be too slow or Town may dominate.");
+    if (killpower > 6) warnings.push("⚠️ HIGH KILLPOWER: Too much killing potential may end the game quickly.");
 
     // --- Minor Warnings (only if no related major warning) ---
     if (!warnings.some(w => w.includes("LOW TOWN"))) {
